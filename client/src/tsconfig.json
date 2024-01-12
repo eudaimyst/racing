@@ -1,0 +1,11 @@
+{
+	"compilerOptions": {
+		"strict": true,
+		"target": "es6",
+		"moduleResolution": "NodeNext",
+		"module": "NodeNext",
+		"allowImportingTsExtensions": true,
+		"emitDeclarationOnly": true,
+		"declaration": true
+	}
+}

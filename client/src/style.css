@@ -1,3 +1,29 @@
-body {
-	background-color: #224062;
+#debugContainer {
+	align-items: center;
+	border: 1px solid blue;
+	font-size: 14px;
+}
+
+#screenContainer {
+	width: 100%;
+	overflow: 'hidden';
+	border: '1px solid black';
+}
+
+.debugItem {
+	font-family: Arial, Helvetica, sans-serif;
+	text-align: left;
+	border: 1px solid gray;
+	display: flex;
+	align-items: center;
+}
+
+.debugSlider {
+	font-family: Arial, Helvetica, sans-serif;
+}
+
+.debugInputBox {
+	font-family: Arial, Helvetica, sans-serif;
+	width: 1.5em;
+	font-size: 14px;
 }
