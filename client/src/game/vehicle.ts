@@ -1,5 +1,6 @@
 import { Camera } from './camera';
 import { GameObject } from './game_object';
+import '@pixi/math-extras';
 
 const vehicleSettings: Map<string, any> = new Map<string, any>();
 vehicleSettings.set('maxSteeringAngle', 90);
@@ -45,7 +46,6 @@ export default class Vehicle extends GameObject {
 	 */
 	ApplyAccelerator(value: number) {
 		this.isAccelerating = true;
-		if (value > 1) value = 1;
 		this.accelValue = value;
 	}
 
@@ -72,7 +72,6 @@ export default class Vehicle extends GameObject {
 	 * @param {number} dt - time step, in seconds
 	 */
 	Tick(dt: number) {
-		console.log(this.accelValue);
 		if (this.isBraking && this.velocity > 0) this.velocity -= this.brakeValue * vehicleSettings.get('brakingForce'); //reduces the velocity by the braking force
 		if (this.isAccelerating) this.velocity += this.accelValue * vehicleSettings.get('power') * 10 * dt; //increases the velocity by the vehicles power
 
@@ -82,14 +81,10 @@ export default class Vehicle extends GameObject {
 		this.steeringAngle *= 1 - vehicleSettings.get('steeringRebound') * dt; //reverts the steering angle to center at a constant rate
 
 		//adjust position of vehicle
-		this.dirX = Math.cos(this.rotation - Math.PI / 2); //minus 90 degrees as default points right
-		this.dirY = Math.sin(this.rotation - Math.PI / 2);
-		this.deltaX = this.dirX * this.velocity * dt;
-		this.deltaY = this.dirY * this.velocity * dt;
-
-		this.MoveBy(this.deltaX, this.deltaY);
-		this.UpdatePos();
+		this.motionVectorUnit.set(Math.cos(this.rotation - Math.PI / 2), Math.sin(this.rotation - Math.PI / 2));
+		this.motionVector.copyFrom(this.motionVectorUnit.multiplyScalar(this.velocity * dt));
 		this.isBraking = false;
 		this.isAccelerating = false;
+		super.Tick(dt);
 	}
 }

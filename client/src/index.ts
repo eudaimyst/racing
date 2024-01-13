@@ -1,5 +1,6 @@
 import { Application } from 'pixi.js';
 import { Game } from './game.ts';
+import '@pixi/math-extras';
 
 const game: Game = new Game();
 const carUpdateSetting = game.carUpdateSetting; //sets callback function as passed from Game.Init

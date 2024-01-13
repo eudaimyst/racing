@@ -28,8 +28,9 @@
     "util": "^0.12.5"
   },
   "dependencies": {
+    "@pixi/math-extras": "^7.3.3",
     "@pixi/ui": "^0.10.1",
-    "pixi.js": "^7.3.2",
+    "pixi.js": "^7.3.3",
     "socket.io-client": "^4.7.3"
   },
   "main": "index.js"

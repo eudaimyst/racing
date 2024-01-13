@@ -77,7 +77,7 @@ export class Game extends Application {
 const Tick = () => {
 	let dt = Ticker.shared.deltaMS * 0.001;
 	camera.UpdatePos();
-	track.UpdatePos();
+	track.Tick(dt);
 	car.Tick(dt);
 
 	if (keys.get('Left')) {
@@ -104,7 +104,7 @@ const Tick = () => {
 	}
 
 	//debug text for basic vehicle movement
-	debugText.text = `stage: x${Math.floor(car.x)}, y${Math.floor(car.y)}, ${Math.floor(car.steering)}
+	debugText.text = `stage: x${Math.floor(car.x)}, y${Math.floor(car.y)}, ${Math.floor(car.angle)}
 		\nworld: x${Math.floor(car.worldPos.x)}, y${Math.floor(car.worldPos.y)}
 		\ncamera: x${Math.floor(camera.position.x)}, y${Math.floor(camera.position.y)}
 		\ndirX: ${Math.round(car.dirX * 100) / 100}, dirY: ${Math.round(car.dirY * 100) / 100}

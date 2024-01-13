@@ -45,9 +45,8 @@ export default class TouchControl extends Container {
 		if (this.steer > 90 && this.steer < 271) {
 			this.steer = -(this.steer - 180);
 		}
-		if (this.steer)
-			//as the last step, normalise the values
-			this.power = this.power / 100;
+		//as the last step, normalise the values
+		this.power = this.power / 100;
 		this.steer = this.steer / 90;
 	}
 
