@@ -1,4 +1,4 @@
-import { Sprite, Container, Texture, Transform, ObservablePoint } from 'pixi.js';
+import { Sprite, Container, Texture, ObservablePoint } from 'pixi.js';
 import { Camera } from './camera';
 
 export class GameObject extends Container {
@@ -25,6 +25,8 @@ export class GameObject extends Container {
 		this.addChild(this.sprite);
 	}
 
+	
+	// Updates the position of an object relative to the camera's position.
 	UpdatePos() {
 		this.position.set(this.worldPos.x - this.camera.position.x, this.worldPos.y - this.camera.position.y);
 	}

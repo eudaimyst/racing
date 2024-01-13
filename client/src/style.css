@@ -1,16 +1,39 @@
-#debugContainer {
-	align-items: center;
-	border: 1px solid blue;
-	font-size: 14px;
+body {
+	margin: 0%;
+	padding: 0.1em;
+	overflow: hidden; /* Hide scrollbars */
 }
 
-#screenContainer {
+#windowContainer {
+	margin: 0.1em;
 	width: 100%;
-	overflow: 'hidden';
-	border: '1px solid black';
+	border: 1px solid black;
+}
+
+#gameViewHorizontal {
+	margin: 0.1em;
+	border: 1px solid red;
+	width: 49%;
+	float: left;
+}
+#gameViewVertical {
+	margin: 0.1em;
+	border: 1px solid red;
+	width: 100%;
+	float: top;
+}
+
+#debugContainer {
+	margin: 0.1em;
+	border: 1px solid blue;
+	font-size: 14px;
+	display: flex;
+	display: block;
 }
 
 .debugItem {
+	width: 22em;
+	padding: 0.1em;
 	font-family: Arial, Helvetica, sans-serif;
 	text-align: left;
 	border: 1px solid gray;
@@ -24,6 +47,6 @@
 
 .debugInputBox {
 	font-family: Arial, Helvetica, sans-serif;
-	width: 1.5em;
+	width: 3em;
 	font-size: 14px;
 }

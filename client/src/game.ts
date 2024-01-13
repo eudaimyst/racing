@@ -1,4 +1,4 @@
-import { Application, Container, Sprite, Text, TextStyle, Ticker, TickerCallback } from 'pixi.js';
+import { Application, Text, TextStyle, Ticker } from 'pixi.js';
 import { GameObject } from './game/game_object.ts';
 import { Camera } from './game/camera.ts';
 import Vehicle from './game/vehicle.ts';
@@ -13,8 +13,14 @@ const style = new TextStyle({
 	lineHeight: 6,
 	fill: '#ffffff',
 });
-const text: Text = new Text('', style);
+const debugText: Text = new Text('', style);
 
+/**
+ * Initializes a game by creating a new application, setting up event listeners for
+ * keydown and keyup events, creating a camera, a car, and a track object, adding them to the
+ * application's stage, and starting the game loop.
+ * @returns Object that contains two properties: reference to the Pixi app and a callback function to SetDebugValue.
+ */
 export const Init = () => {
 	console.log('Game initalized');
 	const app = new Application({
@@ -26,68 +32,76 @@ export const Init = () => {
 	document.addEventListener('keyup', keyUp);
 
 	camera = new Camera(app);
-	car = new Vehicle(0, 0, 64, 64, camera);
+	car = new Vehicle(0, 0, 200, 200, camera);
 	track = new GameObject(0, 0, 12000, 12000, './images/track.png', camera);
 
 	app.stage.addChild(track);
 	app.stage.addChild(car);
-	app.stage.addChild(text);
+	app.stage.addChild(debugText);
 	camera.FollowObject(car);
 
-	Ticker.shared.add(doTick);
+	Ticker.shared.add(Tick);
 
 	return { app, SetDebugValue };
 };
 
+/**
+ * Callback sent to index.ts, passes variable to vehicle.ts updateSetting function
+ * @param {string} variableName - A string representing the name of the setting to change.
+ * @param {any} value - value ofthe setting.
+ */
 const SetDebugValue = (variableName: string, value: any) => {
-	console.log(`Setting debug value ${variableName} to ${value}`);
-	car.UpdateVar(variableName, value);
+	console.log(`passing new value ${value} for setting ${variableName} to vehicle`);
+	car.updateSetting(variableName, value);
 };
 
-let speed = 5;
-const doTick = () => {
+/**
+ * The Tick function updates the position and movement of a car based on user input and displays debug
+ * information.
+ */
+const Tick = () => {
+	let dt = Ticker.shared.deltaMS * 0.001;
 	camera.UpdatePos();
 	track.UpdatePos();
-	let dt = Ticker.shared.deltaTime / 100; //ms is innacurate, lots of jumps
 	car.Tick(dt);
-	//let dt = Ticker.shared.deltaMS; //ms is innacurate, lots of jumps
+
 	if (keys.get('Left')) {
-		car.AddSteering(-1);
+		car.ApplySteering(-1);
 	}
 	if (keys.get('Right')) {
-		car.AddSteering(1);
+		car.ApplySteering(1);
 	}
 	if (keys.get('Up')) {
-		car.AddThrust(1);
+		car.ApplyAccelerator();
 	}
 	if (keys.get('Down')) {
-		car.ApplyBrakes();
+		car.ApplyBrake();
 	}
 
-	text.text = `stage: x${Math.floor(car.x)}, y${Math.floor(car.y)}, ${Math.floor(car.angle)}
+	//debug text for basic vehicle movement
+	debugText.text = `stage: x${Math.floor(car.x)}, y${Math.floor(car.y)}, ${Math.floor(car.angle)}
 		\nworld: x${Math.floor(car.worldPos.x)}, y${Math.floor(car.worldPos.y)}
 		\ncamera: x${Math.floor(camera.position.x)}, y${Math.floor(camera.position.y)}
-		\nsteeringAngle: ${Math.floor(car.steeringAngle)}
-		\nthrust: ${Math.floor(car.thrust)}
+		\ndirX: ${Math.round(car.dirX * 100) / 100}, dirY: ${Math.round(car.dirY * 100) / 100}
+		\ndeltaX: ${Math.round(car.deltaX * 100) / 100}, deltaY: ${Math.round(car.deltaY * 100) / 100}
 		\nvelocity: ${Math.floor(car.velocity)}
-		\nbraking: ${car.braking}
+		\nsteeringAngle: ${Math.floor(car.steeringAngle)}
+		\nisAccelerating: ${car.isAccelerating}
+		\nisBraking: ${car.isBraking}
 		`;
 };
 
+//handles keyDown event
 const keyDown = (e: KeyboardEvent): void => {
-	//if the first letters of e.code equal 'Arrow'
 	if (e.code.substring(0, 5) === 'Arrow') {
-		//print the remaining value of the string
-		//console.log(e.code.substring(5));
-		keys.set(e.code.substring(5), true);
-		e.preventDefault();
-		//console.log(e.code, true);
+		keys.set(e.code.substring(5), true); //use rem. of the input event string for key Map index
+		e.preventDefault(); //prevent page navigation for arrow keys
 	}
 };
+//handles keyUp event
 const keyUp = (e: KeyboardEvent): void => {
 	if (e.code.substring(0, 5) === 'Arrow') {
-		e.preventDefault();
-		//console.log(e.code, false);
 		keys.set(e.code.substring(5), false);
+		e.preventDefault();
 	}
 };
