@@ -26,6 +26,12 @@ export default class TouchControl extends Container {
 		this.visible = true;
 	}
 
+/**
+ * The function `UpdateTouch` calculates the power and steering values based on the touch position and
+ * updates the control circle accordingly.
+ * @param {number} x - The x parameter represents the x-coordinate of the touch position on the screen.
+ * @param {number} y - The `y` parameter represents the y-coordinate of the touch position.
+ */
 	UpdateTouch(x: number, y: number) {
 		const dx = x - this.position.x;
 		const dy = y - this.position.y;

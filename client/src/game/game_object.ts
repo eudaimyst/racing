@@ -1,4 +1,4 @@
-import { Sprite, Container, Texture, ObservablePoint, Point } from 'pixi.js';
+import { Sprite, Container, Texture, ObservablePoint } from 'pixi.js';
 import { Camera } from './camera';
 import '@pixi/math-extras';
 
@@ -7,7 +7,7 @@ export class GameObject extends Container {
 	private camera: Camera;
 	worldPos: ObservablePoint;
 	motionVector: ObservablePoint;
-	motionVectorUnit: Point;
+	motionVectorUnit: ObservablePoint;
 
 	/**
 	 * This function creates a sprite object with a specified width and height, sets its anchor point, and
@@ -21,7 +21,7 @@ export class GameObject extends Container {
 		this.camera = camera;
 		this.worldPos = new ObservablePoint(() => {}, this);
 		this.motionVector = new ObservablePoint(() => {}, this);
-		this.motionVectorUnit = new Point();
+		this.motionVectorUnit = new ObservablePoint(() => {}, this);
 		this.worldPos.set(x, y);
 		this.sprite = new Sprite(Texture.from(path));
 		this.sprite.width = w || 50;
