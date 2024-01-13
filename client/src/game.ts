@@ -1,9 +1,11 @@
-import { Application, Text, TextStyle, Ticker } from 'pixi.js';
+import { Application, ObservablePoint, Text, TextStyle, Ticker } from 'pixi.js';
 import { GameObject } from './game/game_object.ts';
 import { Camera } from './game/camera.ts';
 import Vehicle from './game/vehicle.ts';
+import TouchControl from './game/touch_control.ts';
 
 const keys: Map<string, boolean> = new Map<string, boolean>();
+let game: Game;
 let car: Vehicle;
 let track: GameObject;
 let camera: Camera;
@@ -15,49 +17,62 @@ const style = new TextStyle({
 });
 const debugText: Text = new Text('', style);
 
+export class Game extends Application {
+	carUpdateSetting: Function;
+	pointerPos: ObservablePoint;
+	pointerDownPos: ObservablePoint;
+	pointerDown: boolean = false;
+	touchControl: TouchControl = new TouchControl();
+	constructor() {
+		super({
+			backgroundColor: '#8888DD',
+			width: 1000,
+			height: 1000,
+		});
+		game = this;
+		document.addEventListener('keydown', keyDown);
+		document.addEventListener('keyup', keyUp);
+
+		camera = new Camera(this);
+		car = new Vehicle(0, 0, 200, 200, camera);
+		track = new GameObject(0, 0, 12000, 12000, './images/track.png', camera);
+
+		this.carUpdateSetting = car.UpdateSetting;
+		this.pointerPos = new ObservablePoint(() => {}, this);
+		this.pointerDownPos = new ObservablePoint(() => {}, this);
+		this.stage.eventMode = 'static';
+
+		this.stage.addEventListener('pointermove', (e) => {
+			this.pointerPos.set(e.global.x, e.global.y);
+			if (this.pointerDown) {
+				this.touchControl.UpdateTouch(this.pointerPos.x, this.pointerPos.y);
+			}
+		});
+
+		this.stage.on('pointerdown', (e) => {
+			this.pointerPos.set(e.global.x, e.global.y);
+			this.pointerDownPos.set(e.global.x, e.global.y);
+			this.touchControl.StartTouch(this.pointerPos.x, this.pointerPos.y);
+			this.pointerDown = true;
+		});
+
+		this.stage.on('pointerup', () => {
+			this.pointerDown = false;
+			this.touchControl.EndTouch();
+		});
+
+		this.stage.addChild(track);
+		this.stage.addChild(car);
+		this.stage.addChild(debugText);
+		this.stage.addChild(this.touchControl);
+		camera.FollowObject(car);
+
+		Ticker.shared.add(Tick);
+	}
+}
+
 /**
- * Initializes a game by creating a new application, setting up event listeners for
- * keydown and keyup events, creating a camera, a car, and a track object, adding them to the
- * application's stage, and starting the game loop.
- * @returns Object that contains two properties: reference to the Pixi app and a callback function to SetDebugValue.
- */
-export const Init = () => {
-	console.log('Game initalized');
-	const app = new Application({
-		backgroundColor: '#8888DD',
-		width: 1000,
-		height: 1000,
-	});
-	document.addEventListener('keydown', keyDown);
-	document.addEventListener('keyup', keyUp);
-
-	camera = new Camera(app);
-	car = new Vehicle(0, 0, 200, 200, camera);
-	track = new GameObject(0, 0, 12000, 12000, './images/track.png', camera);
-
-	app.stage.addChild(track);
-	app.stage.addChild(car);
-	app.stage.addChild(debugText);
-	camera.FollowObject(car);
-
-	Ticker.shared.add(Tick);
-
-	return { app, SetDebugValue };
-};
-
-/**
- * Callback sent to index.ts, passes variable to vehicle.ts updateSetting function
- * @param {string} variableName - A string representing the name of the setting to change.
- * @param {any} value - value ofthe setting.
- */
-const SetDebugValue = (variableName: string, value: any) => {
-	console.log(`passing new value ${value} for setting ${variableName} to vehicle`);
-	car.updateSetting(variableName, value);
-};
-
-/**
- * The Tick function updates the position and movement of a car based on user input and displays debug
- * information.
+ * Updates position and movement of car based on user input and updates debug texts.
  */
 const Tick = () => {
 	let dt = Ticker.shared.deltaMS * 0.001;
@@ -72,14 +87,24 @@ const Tick = () => {
 		car.ApplySteering(1);
 	}
 	if (keys.get('Up')) {
-		car.ApplyAccelerator();
+		car.ApplyAccelerator(1);
 	}
 	if (keys.get('Down')) {
-		car.ApplyBrake();
+		car.ApplyBrake(1);
+	}
+
+	if (game.touchControl.steer !== 0) {
+		car.ApplySteering(game.touchControl.steer);
+	}
+	if (game.touchControl.power > 0) {
+		car.ApplyAccelerator(game.touchControl.power);
+	}
+	if (game.touchControl.power < 0) {
+		car.ApplyBrake(-game.touchControl.power);
 	}
 
 	//debug text for basic vehicle movement
-	debugText.text = `stage: x${Math.floor(car.x)}, y${Math.floor(car.y)}, ${Math.floor(car.angle)}
+	debugText.text = `stage: x${Math.floor(car.x)}, y${Math.floor(car.y)}, ${Math.floor(car.steering)}
 		\nworld: x${Math.floor(car.worldPos.x)}, y${Math.floor(car.worldPos.y)}
 		\ncamera: x${Math.floor(camera.position.x)}, y${Math.floor(camera.position.y)}
 		\ndirX: ${Math.round(car.dirX * 100) / 100}, dirY: ${Math.round(car.dirY * 100) / 100}
@@ -88,6 +113,12 @@ const Tick = () => {
 		\nsteeringAngle: ${Math.floor(car.steeringAngle)}
 		\nisAccelerating: ${car.isAccelerating}
 		\nisBraking: ${car.isBraking}
+		\n---------------------------------
+		\npointerPos: x${Math.floor(game.pointerPos.x)}, y${Math.floor(game.pointerPos.y)}
+		\npointerDownPos: x${Math.floor(game.pointerDownPos.x)}, y${Math.floor(game.pointerDownPos.y)}
+		\npointerDown: ${game.pointerDown}
+		\ntouchPower${Math.floor(game.touchControl.power * 100) / 100}
+		\ntouchSteer${Math.floor(game.touchControl.steer * 100) / 100}
 		`;
 };
 
@@ -105,3 +136,9 @@ const keyUp = (e: KeyboardEvent): void => {
 		e.preventDefault();
 	}
 };
+
+/**
+ * 
+		
+		app.stage.eventMode = 'static';
+ */

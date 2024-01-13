@@ -13,7 +13,9 @@ export default class Vehicle extends GameObject {
 	//variables, set by input / simulation
 	steeringAngle: number = 0; //-ve is left, +ve is right
 	isBraking: boolean = false;
+	brakeValue: number = 0; //analog
 	isAccelerating: boolean = false;
+	accelValue: number = 0; //analog
 	thrust: number = 0; //increases velocity
 	velocity: number = 0; //m/s
 	dirX: number = 0;
@@ -39,18 +41,20 @@ export default class Vehicle extends GameObject {
 	}
 
 	/**
-	 * Increases thrust by a specified value, multiplied by power of vehicle.
-	 * @param {number} value - Min: 0, Max: 1
+	 * Increases velocity by power when true
 	 */
-	ApplyAccelerator() {
+	ApplyAccelerator(value: number) {
 		this.isAccelerating = true;
+		if (value > 1) value = 1;
+		this.accelValue = value;
 	}
 
 	/**
-	 * Reduces the velocity of an object by applying a braking force, linear (for now).
+	 * Reduces velocity when true
 	 */
-	ApplyBrake() {
+	ApplyBrake(value: number) {
 		this.isBraking = true;
+		this.brakeValue = value;
 	}
 
 	/**
@@ -58,18 +62,19 @@ export default class Vehicle extends GameObject {
 	 * @param {string} key - the key of the setting to be upadted in the vehicleSettings Map.
 	 * @param {any} value - Represents the new value to be assigned.
 	 */
-	updateSetting(key: string, value: any) {
+	UpdateSetting = (key: string, value: any) => {
 		if (vehicleSettings.has(key)) vehicleSettings.set(key, value);
 		else console.log(`ERROR: <vehicle.ts> ${key} does not exist in vars Map`);
-	}
+	};
 
 	/**
 	 * Updates the position and velocity of a vehicle based on various settings and user input.
 	 * @param {number} dt - time step, in seconds
 	 */
 	Tick(dt: number) {
-		if (this.isBraking && this.velocity > 0) this.velocity -= vehicleSettings.get('brakingForce'); //reduces the velocity by the braking force
-		if (this.isAccelerating) this.velocity += vehicleSettings.get('power') * 10 * dt; //increases the velocity by the vehicles power
+		console.log(this.accelValue);
+		if (this.isBraking && this.velocity > 0) this.velocity -= this.brakeValue * vehicleSettings.get('brakingForce'); //reduces the velocity by the braking force
+		if (this.isAccelerating) this.velocity += this.accelValue * vehicleSettings.get('power') * 10 * dt; //increases the velocity by the vehicles power
 
 		this.angle += this.steeringAngle * (this.velocity / 500) * vehicleSettings.get('steeringRate') * dt; //rotates the vehicles angle by the
 

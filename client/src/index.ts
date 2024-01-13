@@ -1,9 +1,8 @@
 import { Application } from 'pixi.js';
-import * as Game from './game.ts';
+import { Game } from './game.ts';
 
-const ret = Game.Init();
-const game: Application = ret.app;
-const debugCallback = ret.SetDebugValue; //sets callback function as passed from Game.Init
+const game: Game = new Game();
+const carUpdateSetting = game.carUpdateSetting; //sets callback function as passed from Game.Init
 
 //window div
 const windowContainer = document.createElement('div'); //div contains everything in the doc
@@ -73,9 +72,9 @@ function makeSlider(label: string, min: number, max: number, initial: number, cb
 	return debugItem;
 }
 
-debugContainer.appendChild(makeSlider('maxSteeringAngle', 30, 120, 90, debugCallback));
-debugContainer.appendChild(makeSlider('steeringRate', 1, 10, 3, debugCallback));
-debugContainer.appendChild(makeSlider('power', 1, 1000, 100, debugCallback));
-debugContainer.appendChild(makeSlider('brakingForce', 1, 100, 10, debugCallback));
-debugContainer.appendChild(makeSlider('resistance', 0, 10, 1, debugCallback));
-debugContainer.appendChild(makeSlider('steeringRebound', 0, 15, 5, debugCallback));
+debugContainer.appendChild(makeSlider('maxSteeringAngle', 30, 120, 90, carUpdateSetting));
+debugContainer.appendChild(makeSlider('steeringRate', 1, 10, 3, carUpdateSetting));
+debugContainer.appendChild(makeSlider('power', 1, 1000, 100, carUpdateSetting));
+debugContainer.appendChild(makeSlider('brakingForce', 1, 100, 10, carUpdateSetting));
+debugContainer.appendChild(makeSlider('resistance', 0, 10, 1, carUpdateSetting));
+debugContainer.appendChild(makeSlider('steeringRebound', 0, 15, 5, carUpdateSetting));
