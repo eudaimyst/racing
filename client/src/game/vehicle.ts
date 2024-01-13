@@ -1,3 +1,4 @@
+import { Point } from 'pixi.js';
 import { Camera } from './camera';
 import { GameObject } from './game_object';
 import '@pixi/math-extras';
@@ -82,7 +83,9 @@ export default class Vehicle extends GameObject {
 
 		//adjust position of vehicle
 		this.motionVectorUnit.set(Math.cos(this.rotation - Math.PI / 2), Math.sin(this.rotation - Math.PI / 2));
-		this.motionVector.copyFrom(this.motionVectorUnit.multiplyScalar(this.velocity * dt));
+		this.motionVector.x = this.motionVectorUnit.x * this.velocity * dt;
+		this.motionVector.y = this.motionVectorUnit.y * this.velocity * dt;
+		//this.motionVector.copyFrom(this.motionVectorUnit.multiplyScalar(this.velocity * dt));
 		this.isBraking = false;
 		this.isAccelerating = false;
 		super.Tick(dt);

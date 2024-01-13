@@ -3,6 +3,9 @@ import { GameObject } from './game/game_object.ts';
 import { Camera } from './game/camera.ts';
 import Vehicle from './game/vehicle.ts';
 import TouchControl from './game/touch_control.ts';
+import { Test } from './game/test.ts';
+
+Test();
 
 const keys: Map<string, boolean> = new Map<string, boolean>();
 let game: Game;
