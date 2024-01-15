@@ -1,10 +1,11 @@
-import { Application, Transform } from 'pixi.js';
+import { Application, ObservablePoint, Point, Transform } from 'pixi.js';
 import { GameObject } from './game_object';
 
 export class Camera extends Transform {
 	private followTarget: GameObject | null;
 	private app: Application;
 	zoom: number = 20;
+	zoomOffset: Point = new Point();
 
 	constructor(app: Application) {
 		super();
@@ -13,10 +14,9 @@ export class Camera extends Transform {
 	}
 
 	UpdatePos() {
-		const zoomFactor: number = 100 / this.zoom;
 		if (this.followTarget) {
-			const t: GameObject = this.followTarget;
-			this.position.set(t.worldPos.x - (this.app.renderer.width / 2) * zoomFactor, t.worldPos.y - (this.app.renderer.height / 2) * zoomFactor);
+			this.zoomOffset.set(this.app.renderer.width / 2 / this.zoom, this.app.renderer.height / 2 / this.zoom);
+			this.position = this.followTarget.worldPos.clone().subtract(this.zoomOffset) as ObservablePoint;
 		}
 	}
 

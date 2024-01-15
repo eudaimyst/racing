@@ -77,11 +77,16 @@ function makeSlider(label: string, min: number, max: number, initial: number, cb
 	return debugItem;
 }
 
-debugContainer.appendChild(makeSlider('maxSteeringAngle', 30, 120, 90, carUpdateSetting));
-debugContainer.appendChild(makeSlider('steeringRate', 1, 10, 3, carUpdateSetting));
-debugContainer.appendChild(makeSlider('power', 1, 1000, 100, carUpdateSetting));
-debugContainer.appendChild(makeSlider('brakingForce', 1, 100, 10, carUpdateSetting));
-debugContainer.appendChild(makeSlider('resistance', 0, 10, 1, carUpdateSetting));
-debugContainer.appendChild(makeSlider('steeringRebound', 0, 15, 15, carUpdateSetting));
+debugContainer.appendChild(makeSlider('power', 1, 100, 10, carUpdateSetting));
+debugContainer.appendChild(makeSlider('brakingForce', 0, 2, 0.3, carUpdateSetting));
+debugContainer.appendChild(makeSlider('resistance', 0, 2, 0.2, carUpdateSetting));
+debugContainer.appendChild(makeSlider('steeringForce', 0, 1, 0.1, carUpdateSetting));
+debugContainer.appendChild(makeSlider('maxSteeringAngle', 15, 90, 45, carUpdateSetting));
+debugContainer.appendChild(makeSlider('steeringRate', 1, 30, 3, carUpdateSetting));
+debugContainer.appendChild(makeSlider('steeringRebound', 1, 30, 15, carUpdateSetting));
+debugContainer.appendChild(makeSlider('loadFactorPosY', 0, 10, 1, carUpdateSetting));
+debugContainer.appendChild(makeSlider('loadFactorNegY', 0, 10, 1, carUpdateSetting));
+debugContainer.appendChild(makeSlider('loadChangeRate', 0, 10, 1, carUpdateSetting));
 debugContainer.appendChild(makeSlider('slipFactor', 0, 10, 1, carUpdateSetting));
-debugContainer.appendChild(makeSlider('cameraZoom', 1, 100, 20, camUpdateSetting));
+
+debugContainer.appendChild(makeSlider('cameraZoom', 1, 100, 10, camUpdateSetting));

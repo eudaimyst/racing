@@ -1,6 +1,7 @@
 import { Sprite, Container, Texture, Point } from 'pixi.js';
 import { Camera } from './camera';
 import '@pixi/math-extras';
+import { Game } from '../game';
 
 export class GameObject extends Container {
 	private sprite: Sprite;
@@ -16,9 +17,9 @@ export class GameObject extends Container {
 	 * @param {number} h - The parameter `h` represents the height of the sprite.
 	 * @param {string} path - The parameter `path` represents the path to the image file.
 	 */
-	constructor(x: number, y: number, w: number, h: number, path: string, camera: Camera) {
+	constructor(x: number, y: number, w: number, h: number, path: string, game: Game) {
 		super();
-		this.camera = camera;
+		this.camera = game.GetCamera();
 		this.worldPos = new Point(0, 0);
 		this.motionVector = new Point(0, 0);
 		this.motionVectorUnit = new Point(0, 0);
@@ -32,7 +33,7 @@ export class GameObject extends Container {
 
 	// Updates the position of an object relative to the camera's position.
 	private UpdatePos() {
-		const scaleFactor = this.camera.zoom / 100;
+		const scaleFactor = this.camera.zoom; //this is the opposize of the cameras zoom factor which is 100/zoom
 		this.position.set((this.worldPos.x - this.camera.position.x) * scaleFactor, (this.worldPos.y - this.camera.position.y) * scaleFactor);
 		this.scale.set(this.camera.zoom);
 	}

@@ -37,8 +37,8 @@ export class Game extends Application {
 		document.addEventListener('keyup', keyUp);
 
 		camera = new Camera(this);
-		car = new Vehicle(0, 0, 4.8, 4.8, camera);
-		track = new GameObject(0, 0, 400, 400, './images/track.png', camera);
+		car = new Vehicle(0, 0, 4.8, 4.8, this);
+		track = new GameObject(0, 0, 400, 400, './images/track.png', this);
 
 		this.carUpdateSetting = car.UpdateSetting;
 		this.camUpdateSetting = camera.UpdateSetting;
@@ -67,10 +67,15 @@ export class Game extends Application {
 		this.stage.addChild(car);
 		this.stage.addChild(debugText);
 		this.stage.addChild(this.touchControl);
+		this.stage.addChild(car.debugGraphics);
 		camera.SetFollowTarget(car);
 
 		Ticker.shared.add(Tick);
 	}
+
+	GetCamera = () => {
+		return camera;
+	};
 }
 
 /**
@@ -111,6 +116,7 @@ const Tick = () => {
 		\ncamera: x${Math.floor(camera.position.x)}, y${Math.floor(camera.position.y)}
 		\nmotionX: ${Math.round(car.motionVector.x * 100) / 100}, dirY: ${Math.round(car.motionVector.y * 100) / 100}
 		\nmotionUnitX: ${Math.round(car.motionVectorUnit.x * 100) / 100}, deltaY: ${Math.round(car.motionVectorUnit.y * 100) / 100}
+		\nthrust: ${Math.floor(car.forwardM)}
 		\nvelocity: ${Math.floor(car.velocity)}
 		\nsteeringAngle: ${Math.floor(car.steeringAngle)}
 		\nisAccelerating: ${car.isAccelerating}
