@@ -1,9 +1,9 @@
-import { Application } from 'pixi.js';
 import { Game } from './game.ts';
 import '@pixi/math-extras';
 
 const game: Game = new Game();
-const carUpdateSetting = game.carUpdateSetting; //sets callback function as passed from Game.Init
+const carUpdateSetting: Function = game.carUpdateSetting; //sets callback function as passed from Game.Init
+const camUpdateSetting: Function = game.camUpdateSetting;
 
 //window div
 const windowContainer = document.createElement('div'); //div contains everything in the doc
@@ -13,10 +13,13 @@ windowContainer.id = 'windowContainer'; //for css
 //game div
 const gameView = game.view as HTMLCanvasElement; //element containing the pixi app
 windowContainer.appendChild(gameView);
-window.innerWidth < window.innerHeight ? (gameView.id = 'gameViewVertical') : (gameView.id = 'gameViewHorizontal');
+const AdjustLayout = () => {
+	window.innerWidth < window.innerHeight ? (gameView.id = 'gameViewVertical') : (gameView.id = 'gameViewHorizontal');
+};
+AdjustLayout();
 //update id when window is resized to alter the layout of the element via css
 addEventListener('resize', () => {
-	window.innerWidth < window.innerHeight ? (gameView.id = 'gameViewVertical') : (gameView.id = 'gameViewHorizontal');
+	AdjustLayout();
 });
 
 //debug div
@@ -70,6 +73,7 @@ function makeSlider(label: string, min: number, max: number, initial: number, cb
 			cb(label, slider.value);
 		}
 	});
+	console.log(debugItem);
 	return debugItem;
 }
 
@@ -78,4 +82,6 @@ debugContainer.appendChild(makeSlider('steeringRate', 1, 10, 3, carUpdateSetting
 debugContainer.appendChild(makeSlider('power', 1, 1000, 100, carUpdateSetting));
 debugContainer.appendChild(makeSlider('brakingForce', 1, 100, 10, carUpdateSetting));
 debugContainer.appendChild(makeSlider('resistance', 0, 10, 1, carUpdateSetting));
-debugContainer.appendChild(makeSlider('steeringRebound', 0, 15, 5, carUpdateSetting));
+debugContainer.appendChild(makeSlider('steeringRebound', 0, 15, 15, carUpdateSetting));
+debugContainer.appendChild(makeSlider('slipFactor', 0, 10, 1, carUpdateSetting));
+debugContainer.appendChild(makeSlider('cameraZoom', 1, 100, 20, camUpdateSetting));

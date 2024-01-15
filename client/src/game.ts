@@ -18,7 +18,10 @@ const style = new TextStyle({
 const debugText: Text = new Text('', style);
 
 export class Game extends Application {
+	//used to pass values from html
 	carUpdateSetting: Function;
+	camUpdateSetting: Function;
+
 	pointerPos: ObservablePoint;
 	pointerDownPos: ObservablePoint;
 	pointerDown: boolean = false;
@@ -34,19 +37,18 @@ export class Game extends Application {
 		document.addEventListener('keyup', keyUp);
 
 		camera = new Camera(this);
-		car = new Vehicle(0, 0, 200, 200, camera);
-		track = new GameObject(0, 0, 12000, 12000, './images/track.png', camera);
+		car = new Vehicle(0, 0, 4.8, 4.8, camera);
+		track = new GameObject(0, 0, 400, 400, './images/track.png', camera);
 
 		this.carUpdateSetting = car.UpdateSetting;
+		this.camUpdateSetting = camera.UpdateSetting;
 		this.pointerPos = new ObservablePoint(() => {}, this);
 		this.pointerDownPos = new ObservablePoint(() => {}, this);
 		this.stage.eventMode = 'static';
 
 		this.stage.addEventListener('pointermove', (e) => {
 			this.pointerPos.set(e.global.x, e.global.y);
-			if (this.pointerDown) {
-				this.touchControl.UpdateTouch(this.pointerPos.x, this.pointerPos.y);
-			}
+			if (this.pointerDown) this.touchControl.UpdateTouch(this.pointerPos.x, this.pointerPos.y);
 		});
 
 		this.stage.on('pointerdown', (e) => {
@@ -65,7 +67,7 @@ export class Game extends Application {
 		this.stage.addChild(car);
 		this.stage.addChild(debugText);
 		this.stage.addChild(this.touchControl);
-		camera.FollowObject(car);
+		camera.SetFollowTarget(car);
 
 		Ticker.shared.add(Tick);
 	}
@@ -76,9 +78,9 @@ export class Game extends Application {
  */
 const Tick = () => {
 	let dt = Ticker.shared.deltaMS * 0.001;
-	camera.UpdatePos();
 	track.Tick(dt);
 	car.Tick(dt);
+	//camera.UpdatePos();
 
 	if (keys.get('Left')) {
 		car.ApplySteering(-1);
@@ -107,8 +109,8 @@ const Tick = () => {
 	debugText.text = `stage: x${Math.floor(car.x)}, y${Math.floor(car.y)}, ${Math.floor(car.angle)}
 		\nworld: x${Math.floor(car.worldPos.x)}, y${Math.floor(car.worldPos.y)}
 		\ncamera: x${Math.floor(camera.position.x)}, y${Math.floor(camera.position.y)}
-		\ndirX: ${Math.round(car.dirX * 100) / 100}, dirY: ${Math.round(car.dirY * 100) / 100}
-		\ndeltaX: ${Math.round(car.deltaX * 100) / 100}, deltaY: ${Math.round(car.deltaY * 100) / 100}
+		\nmotionX: ${Math.round(car.motionVector.x * 100) / 100}, dirY: ${Math.round(car.motionVector.y * 100) / 100}
+		\nmotionUnitX: ${Math.round(car.motionVectorUnit.x * 100) / 100}, deltaY: ${Math.round(car.motionVectorUnit.y * 100) / 100}
 		\nvelocity: ${Math.floor(car.velocity)}
 		\nsteeringAngle: ${Math.floor(car.steeringAngle)}
 		\nisAccelerating: ${car.isAccelerating}

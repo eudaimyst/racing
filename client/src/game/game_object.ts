@@ -1,13 +1,13 @@
-import { Sprite, Container, Texture, ObservablePoint } from 'pixi.js';
+import { Sprite, Container, Texture, Point } from 'pixi.js';
 import { Camera } from './camera';
 import '@pixi/math-extras';
 
 export class GameObject extends Container {
 	private sprite: Sprite;
 	private camera: Camera;
-	worldPos: ObservablePoint;
-	motionVector: ObservablePoint;
-	motionVectorUnit: ObservablePoint;
+	worldPos: Point;
+	motionVector: Point;
+	motionVectorUnit: Point;
 
 	/**
 	 * This function creates a sprite object with a specified width and height, sets its anchor point, and
@@ -19,9 +19,9 @@ export class GameObject extends Container {
 	constructor(x: number, y: number, w: number, h: number, path: string, camera: Camera) {
 		super();
 		this.camera = camera;
-		this.worldPos = new ObservablePoint(() => {}, this);
-		this.motionVector = new ObservablePoint(() => {}, this);
-		this.motionVectorUnit = new ObservablePoint(() => {}, this);
+		this.worldPos = new Point(0, 0);
+		this.motionVector = new Point(0, 0);
+		this.motionVectorUnit = new Point(0, 0);
 		this.worldPos.set(x, y);
 		this.sprite = new Sprite(Texture.from(path));
 		this.sprite.width = w || 50;
@@ -32,7 +32,9 @@ export class GameObject extends Container {
 
 	// Updates the position of an object relative to the camera's position.
 	private UpdatePos() {
-		this.position.set(this.worldPos.x - this.camera.position.x, this.worldPos.y - this.camera.position.y);
+		const scaleFactor = this.camera.zoom / 100;
+		this.position.set((this.worldPos.x - this.camera.position.x) * scaleFactor, (this.worldPos.y - this.camera.position.y) * scaleFactor);
+		this.scale.set(this.camera.zoom);
 	}
 
 	MoveBy(x: number, y: number) {
@@ -45,6 +47,7 @@ export class GameObject extends Container {
 
 	Tick(dt: number) {
 		this.MoveBy(this.motionVector.x, this.motionVector.y);
+		if (this.camera.GetFollowTarget() == this) this.camera.UpdatePos();
 		this.UpdatePos();
 	}
 }
