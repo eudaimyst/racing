@@ -15,7 +15,7 @@ const settingNames: Array<string> = [
 	'loadFactorPosY',
 	'loadFactorNegY',
 	'loadChangeRate',
-	'slipFactor',
+	'slipLimit',
 ];
 //for each name add it to vehicleSettings Map
 for (let i = 0; i < settingNames.length; i++) {
@@ -69,8 +69,6 @@ class Circle extends Graphics {
 
 //#region debug container for debugging the load
 const overloadValue: number = 15; //point at which debug squares turn red for vehicle load
-const overLoadValueX: number = 15; //point at which debug squares turn red for vehicle load
-const overLoadValueY: number = 50; //point at which debug squares turn red for vehicle load
 
 class VehicleDebug extends Container {
 	vehicle: Vehicle;
@@ -95,11 +93,7 @@ class VehicleDebug extends Container {
 		this.steeringAngle.angle = this.vehicle.steeringAngle;
 		this.loadText.text = `x: ${Math.floor(this.vehicle.load.x)}\ny: ${Math.floor(this.vehicle.load.y)}`;
 		this.loadText.position.set(-this.loadText.width / 2, -50);
-		let overload: boolean = false;
-		if (this.vehicle.load.magnitude() > overloadValue) overload = true;
-		//if (this.vehicle.load.x > overLoadValueX || this.vehicle.load.x < -overLoadValueX) overload = true;
-		//if (this.vehicle.load.y > overLoadValueY || this.vehicle.load.y < -overLoadValueY) overload = true;
-		overload ? this.vehLoad.SetColor(0xff0000) : this.vehLoad.SetColor(0xffffff);
+		this.vehicle.overSlipLimit ? this.vehLoad.SetColor(0xff0000) : this.vehLoad.SetColor(0xffffff);
 		//console.log(this.vehicle.load);
 		this.vehLoad.position.set(this.vehicle.load.x, this.vehicle.load.y);
 	}
@@ -117,23 +111,30 @@ export default class Vehicle extends GameObject {
 	oldForwardM: number = 0; //previous frames forwardM for calculating delta
 	momentumDelta: number = 0; //the change in momentum, updated per tick
 	velocity: number = 0; //m/s
-	dirX: number = 0;
-	dirY: number = 0;
-	deltaX: number = 0;
-	deltaY: number = 0;
 	isAccelerating: boolean = false;
 	isBraking: boolean = false;
 	isSteering: boolean = false;
 	debugGraphics: VehicleDebug;
+	overSlipLimit: boolean = false;
+
+	rollingResistance: number = 0;
 
 	rearSlip: number = 0;
 	frontSlip: number = 0;
+	slipAmount: number = 0;
+	frontSlipAngle: number = 0;
 
 	load: Point = new Point(0, 0);
 	loadHistory: Array<Point> = [];
 	loadDelta: Point = new Point(0, 0);
+
+	slip: Point = new Point(0, 0);
+
 	momentum: Point = new Point(0, 0);
 	momentumUnit: Point = new Point(0, 0);
+
+	oldMotionVector: Point = new Point(0, 0);
+	newMotionVector: Point = new Point(0, 0);
 
 	constructor(x: number, y: number, w: number, h: number, game: Game) {
 		super(x, y, w, h, './images/car.png', game);
@@ -189,25 +190,34 @@ export default class Vehicle extends GameObject {
 	 * @param {number} dt - time step, in seconds
 	 */
 	Tick(dt: number) {
+		this.slipAmount = Math.min(1, this.rearSlip / 15);
+		this.slipAmount = Math.min(1, this.rearSlip / 15);
 		//input related, variables set by game input events
-		if (this.isBraking && this.forwardM > 0) this.forwardM -= this.brakeValue * this.GetSetting('brakingForce'); //reduces the momentum by the braking force
+		if (this.isBraking) this.forwardM = Math.max(0, this.forwardM - this.brakeValue * this.GetSetting('brakingForce') * dt); //reduces the momentum by the braking force
 		if (this.isAccelerating) this.forwardM += this.accelValue * this.GetSetting('power') * dt; //increases the momentum by the vehicles power
 		if (!this.isSteering) this.steeringAngle *= 1 - this.GetSetting('steeringRebound') * dt; //reverts the steering angle to center at a constant rate
 
-		this.forwardM *= 1 - this.GetSetting('resistance') * dt; //slows down the vehicle at a constant rate
+		this.rollingResistance = this.GetSetting('resistance') * dt;
+		this.forwardM *= 1 - this.rollingResistance; //slows down the vehicle at a constant rate
 
+		this.load.x > 0 ? (this.rearSlip = -this.rearSlip * 2) : (this.rearSlip = this.rearSlip * 2); //this multiplies the slipping effect in the direction of steering
 		//**IMPORTANT: The container of the game object is rotated here, not at the end of the tick */
-		this.angle += this.steeringAngle * this.GetSetting('steeringForce') * this.forwardM * dt; //multiply steering angle by the forward momentum to prevent rotating when stopped
+		this.angle += (this.steeringAngle + this.rearSlip) * this.GetSetting('steeringForce') * this.forwardM * dt; //multiply steering angle by the forward momentum to prevent rotating when stopped
 
+		console.log(this.rearSlip, this.slipAmount, this.angle);
 		//**IMPORTANT: The motion vector is used by the game_object tick to adjust the objects position */
-		this.motionVectorUnit.set(Math.cos(this.rotation - Math.PI / 2), Math.sin(this.rotation - Math.PI / 2)); //convert the rotation of the vehicle to a unit vector
-		this.motionVector = this.motionVectorUnit.multiplyScalar(this.forwardM * dt); //multiply the vector by the momentum calculated to get the motion vector
+		let degOffset90 = Math.PI / 2;
+		this.motionVectorUnit.set(Math.cos((this.angle - this.rearSlip * 2) * (Math.PI / 180) - degOffset90), Math.sin((this.angle - this.rearSlip * 2) * (Math.PI / 180) - degOffset90)); //convert the rotation of the vehicle to a unit vector
+
+		this.newMotionVector.copyFrom(this.motionVectorUnit.multiplyScalar(this.forwardM * dt)); //multiply the vector by the momentum calculated to get the motion vector
+		this.motionVector.copyFrom(this.oldMotionVector.multiplyScalar(this.slipAmount * (1 - this.rollingResistance * 2)).add(this.newMotionVector.multiplyScalar(1 - this.slipAmount)));
+		this.oldMotionVector.copyFrom(this.motionVector);
 
 		//load is calculated here, used for slip later
 		this.momentumDelta = -(this.oldForwardM - this.forwardM) * Math.pow(10, 2.1); //the difference in momentum between frames, then multiplied by a factor to be usable in load calculations
 		this.oldForwardM = this.forwardM; //store the current forward momentum for the next frames delta calculation
-		this.loadDelta.y = this.momentumDelta + this.forwardM * 0.25; //the addition of the forwardM accounts for load on the rear wheels due to drive
-		this.loadDelta.x = (-this.steeringAngle / 90) * this.forwardM; //just multiply steering angle by speed for horizontal load
+		this.loadDelta.y = (this.momentumDelta + this.forwardM * 0.25) * (1 + this.slipAmount); //the addition of the forwardM accounts for load on the rear wheels due to drive
+		this.loadDelta.x = (-this.steeringAngle / 90) * this.forwardM * (1 + this.slipAmount); //just multiply steering angle by speed for horizontal load
 		//load smoothing
 		const loadChangeFrames = this.GetSetting('loadChangeRate') / dt; //smooth the load value over this many frames
 		if (this.loadHistory.length > loadChangeFrames) this.loadHistory.pop(); //drop the remaining entries in the array if the loadChangeFrame value changes (either due to framerate or setting change)
@@ -218,6 +228,19 @@ export default class Vehicle extends GameObject {
 			t.copyFrom(t.add(item)); //add all the current values in the array to the t point
 		});
 		this.load.copyFrom(t.multiplyScalar(1 / this.loadHistory.length)); //this averages them out
+
+		//slip limit
+		if (this.load.magnitude() > this.GetSetting('slipLimit')) {
+			this.overSlipLimit = true;
+			this.slip.copyFrom(this.load.normalize());
+			this.slip.y < 0 ? (this.frontSlip = this.load.magnitude() - this.GetSetting('slipLimit')) : (this.rearSlip = this.load.magnitude() - this.GetSetting('slipLimit')); //set the front and rear slip values
+			//.log(this.frontSlip);
+		} else {
+			this.overSlipLimit = false;
+			this.slip.set(0, 0);
+			this.frontSlip = 0;
+			this.rearSlip = 0;
+		}
 
 		this.velocity = (this.motionVector.magnitude() / dt) * 3.6; //convert m/s to km/h
 
