@@ -78,6 +78,7 @@ function makeSlider(label: string, min: number, max: number, initial: number, cb
 }
 
 debugContainer.appendChild(makeSlider('power', 1, 100, 10, carUpdateSetting));
+debugContainer.appendChild(makeSlider('weight', 100, 4000, 1000, carUpdateSetting));
 debugContainer.appendChild(makeSlider('brakingForce', 1, 100, 10, carUpdateSetting));
 debugContainer.appendChild(makeSlider('resistance', 0, 2, 0.2, carUpdateSetting));
 debugContainer.appendChild(makeSlider('steeringForce', 0, 1, 0.1, carUpdateSetting));
@@ -86,5 +87,8 @@ debugContainer.appendChild(makeSlider('steeringRate', 1, 30, 3, carUpdateSetting
 debugContainer.appendChild(makeSlider('steeringRebound', 1, 30, 15, carUpdateSetting));
 debugContainer.appendChild(makeSlider('loadChangeRate', 0, 10, 0.2, carUpdateSetting));
 debugContainer.appendChild(makeSlider('slipLimit', 0, 50, 15, carUpdateSetting));
+debugContainer.appendChild(makeSlider('driveBalance', 0, 1, 1, carUpdateSetting));
+debugContainer.appendChild(makeSlider('brakeBalance', 0, 1, 0.5, carUpdateSetting));
+debugContainer.appendChild(makeSlider('tyreGrip', 0, 1, 1, carUpdateSetting));
 
 debugContainer.appendChild(makeSlider('cameraZoom', 1, 100, 10, camUpdateSetting));

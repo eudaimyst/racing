@@ -3,25 +3,6 @@ import { Camera } from './camera';
 import { GameObject } from './game_object';
 import { Game } from '../game';
 
-const vehicleSettings: Map<string, any> = new Map<string, any>();
-const settingNames: Array<string> = [
-	'power',
-	'brakingForce',
-	'resistance',
-	'steeringForce',
-	'maxSteeringAngle',
-	'steeringRate',
-	'steeringRebound',
-	'loadFactorPosY',
-	'loadFactorNegY',
-	'loadChangeRate',
-	'slipLimit',
-];
-//for each name add it to vehicleSettings Map
-for (let i = 0; i < settingNames.length; i++) {
-	vehicleSettings.set(settingNames[i], 0);
-}
-
 const DrawLine = (width: number, color: ColorSource) => {
 	const line = new Graphics();
 	line.lineStyle(width, color);
@@ -103,6 +84,26 @@ class VehicleDebug extends Container {
 
 export default class Vehicle extends GameObject {
 	game: Game; //reference to the passed game instance
+
+	vehicleSettings: Map<string, any> = new Map<string, any>();
+	settingNames: Array<string> = [
+		'power',
+		'weight',
+		'brakingForce',
+		'resistance',
+		'steeringForce',
+		'maxSteeringAngle',
+		'steeringRate',
+		'steeringRebound',
+		'loadFactorPosY',
+		'loadFactorNegY',
+		'loadChangeRate',
+		'slipLimit',
+		'driveBalance', //0 = front, 1 = rear
+		'brakeBalance', //0 = front, 1 = rear
+		'tyreGrip',
+	];
+
 	//variables, set by input / simulation
 	steeringAngle: number = 0; //-ve is left, +ve is right
 	brakeValue: number = 0; //analog
@@ -116,6 +117,8 @@ export default class Vehicle extends GameObject {
 	isSteering: boolean = false;
 	debugGraphics: VehicleDebug;
 	overSlipLimit: boolean = false;
+
+	heading: number = 0;
 
 	rollingResistance: number = 0;
 
@@ -136,11 +139,18 @@ export default class Vehicle extends GameObject {
 	oldMotionVector: Point = new Point(0, 0);
 	newMotionVector: Point = new Point(0, 0);
 
+	physics: VehiclePhysics = new VehiclePhysics(this);
+
 	constructor(x: number, y: number, w: number, h: number, game: Game) {
 		super(x, y, w, h, './images/car.png', game);
 		this.game = game;
 		console.log(this.game);
 		this.debugGraphics = new VehicleDebug(this);
+
+		//for each name add it to vehicleSettings Map
+		for (const setting of this.settingNames) {
+			this.vehicleSettings.set(setting, 0);
+		}
 	}
 
 	/**
@@ -151,7 +161,7 @@ export default class Vehicle extends GameObject {
 	ApplySteering(value: number) {
 		this.isSteering = true;
 		this.steeringAngle += value;
-		this.steeringAngle = Math.min(Math.max(this.steeringAngle, -vehicleSettings.get('maxSteeringAngle')), vehicleSettings.get('maxSteeringAngle'));
+		this.steeringAngle = Math.min(Math.max(this.steeringAngle, -this.GetSetting('maxSteeringAngle')), this.GetSetting('maxSteeringAngle'));
 	}
 
 	/**
@@ -159,6 +169,7 @@ export default class Vehicle extends GameObject {
 	 */
 	ApplyAccelerator(value: number) {
 		this.isAccelerating = true;
+		console.log('y');
 		this.accelValue = value;
 	}
 
@@ -176,12 +187,13 @@ export default class Vehicle extends GameObject {
 	 * @param {any} value - Represents the new value to be assigned.
 	 */
 	UpdateSetting = (key: string, value: any) => {
-		if (vehicleSettings.has(key)) vehicleSettings.set(key, value);
-		else console.log(`ERROR: <vehicle.ts> ${key} does not exist in vars Map`);
+		if (this.vehicleSettings.has(key)) this.vehicleSettings.set(key, value);
+		else console.log(`ERROR: <vehicle.ts> UpdateSetting ${key} does not exist in vars Map`);
 	};
 
 	GetSetting = (key: string) => {
-		return vehicleSettings.get(key);
+		if (this.vehicleSettings.has(key)) return this.vehicleSettings.get(key);
+		else console.log(`ERROR: <vehicle.ts> GetSetting ${key} does not exist in vars Map`);
 	};
 
 	//#region physics vehicle physics tick calculations
@@ -190,22 +202,22 @@ export default class Vehicle extends GameObject {
 	 * @param {number} dt - time step, in seconds
 	 */
 	Tick(dt: number) {
+		/**
 		this.slipAmount = Math.min(1, this.rearSlip / 15);
 		this.slipAmount = Math.min(1, this.rearSlip / 15);
 		//input related, variables set by game input events
 		if (this.isBraking) this.forwardM = Math.max(0, this.forwardM - this.brakeValue * this.GetSetting('brakingForce') * dt); //reduces the momentum by the braking force
 		if (this.isAccelerating) this.forwardM += this.accelValue * this.GetSetting('power') * dt; //increases the momentum by the vehicles power
-		if (!this.isSteering) this.steeringAngle *= 1 - this.GetSetting('steeringRebound') * dt; //reverts the steering angle to center at a constant rate
 
 		this.rollingResistance = this.GetSetting('resistance') * dt;
 		this.forwardM *= 1 - this.rollingResistance; //slows down the vehicle at a constant rate
 
 		this.load.x > 0 ? (this.rearSlip = -this.rearSlip * 2) : (this.rearSlip = this.rearSlip * 2); //this multiplies the slipping effect in the direction of steering
-		//**IMPORTANT: The container of the game object is rotated here, not at the end of the tick */
+		//IMPORTANT: The container of the game object is rotated here, not at the end of the tick 
 		this.angle += (this.steeringAngle + this.rearSlip) * this.GetSetting('steeringForce') * this.forwardM * dt; //multiply steering angle by the forward momentum to prevent rotating when stopped
 
 		console.log(this.rearSlip, this.slipAmount, this.angle);
-		//**IMPORTANT: The motion vector is used by the game_object tick to adjust the objects position */
+		//IMPORTANT: The motion vector is used by the game_object tick to adjust the objects position
 		let degOffset90 = Math.PI / 2;
 		this.motionVectorUnit.set(Math.cos((this.angle - this.rearSlip * 2) * (Math.PI / 180) - degOffset90), Math.sin((this.angle - this.rearSlip * 2) * (Math.PI / 180) - degOffset90)); //convert the rotation of the vehicle to a unit vector
 
@@ -244,13 +256,165 @@ export default class Vehicle extends GameObject {
 
 		this.velocity = (this.motionVector.magnitude() / dt) * 3.6; //convert m/s to km/h
 
+		*/
+
+		this.physics.Tick(dt);
+
+		if (!this.isSteering) {
+			this.steeringAngle *= 1 - this.GetSetting('steeringRebound') * dt; //reverts the steering angle to center at a constant rate
+		}
 		this.isBraking = false;
 		this.isAccelerating = false;
 		this.isSteering = false;
 
+		this.heading += this.physics.yawDelta;
+		this.angle = this.heading;
+		this.motionVector.set(-this.physics.fMomentum * Math.sin(this.heading * (Math.PI / 180)), this.physics.fMomentum * Math.cos(this.heading * (Math.PI / 180)));
 		this.debugGraphics.Update();
 		super.Tick(dt);
 	}
-
-	//#endregion
 }
+
+//#region physics
+
+class VehiclePhysics {
+	v: Vehicle; //reference to the vehicle physics is applied to
+	fMomentum: number = 0; //how much forward force the car has
+	fMomentumDelta: number = 0; //how much the forward force is changing
+	yawDelta: number = 0; //angle in degrees of change in yaw
+	frontAxle: Axle;
+	rearAxle: Axle;
+	wheels: Array<Wheel> = new Array<Wheel>();
+
+	constructor(v: Vehicle) {
+		this.v = v;
+		this.frontAxle = new Axle(v);
+		this.rearAxle = new Axle(v);
+		this.wheels[0] = this.frontAxle.leftWheel;
+		this.wheels[1] = this.frontAxle.rightWheel;
+		this.wheels[2] = this.rearAxle.leftWheel;
+		this.wheels[3] = this.rearAxle.rightWheel;
+	}
+	Tick(dt: number) {
+		const vehicleWeight = this.v.GetSetting('weight');
+		if (this.v.isAccelerating) this.DriveVehicle((this.v.GetSetting('power') / vehicleWeight) * dt); //applies a driving force to the vehicle
+
+		console.log(this.v.isAccelerating);
+		this.EqualizeWheelRotation(); //after applying
+		if (this.v.isBraking) this.Brake((this.v.GetSetting('brakingForce') / vehicleWeight) * dt); //applies a braking force to the vehicle
+		this.wheels.forEach((wheel) => {
+			wheel.Tick();
+		});
+		this.Steer(this.v.GetSetting('steeringForce') * 10 * this.v.steeringAngle * dt);
+		this.fMomentumDelta = this.CalcFMomentumDelta();
+		this.fMomentum += this.fMomentumDelta;
+		const resistance = 1 - this.v.GetSetting('resistance') * dt;
+		this.fMomentum *= resistance;
+	}
+
+	/**
+	 * The function calculates the change in momentum for a set of wheels.
+	 * @returns the average displacement of the wheels in meters.
+	 */
+	CalcFMomentumDelta() {
+		let displacement = 0;
+		this.wheels.forEach((wheel) => {
+			displacement += wheel.rotationDelta * wheel.radius * 0.0254;
+		});
+		console.log(displacement / 4);
+		return displacement / 4;
+	}
+
+	EqualizeWheelRotation() {
+		let highestRotation = 0;
+		this.wheels.forEach((wheel) => {
+			if (wheel.rotation > highestRotation) highestRotation = wheel.rotation;
+		});
+	}
+
+	/** adds forward momentum to the vehicle
+	 * @param {number} force - how much energy to move.
+	 */
+	DriveVehicle(force: number) {
+		const balance = this.v.GetSetting('driveBalance');
+		this.frontAxle.DriveAxle(force * 1 - balance);
+		this.rearAxle.DriveAxle(force * 1 + balance);
+	}
+
+	/** adds forward momentum to the vehicle
+	 * @param {number} force - how much energy to move.
+	 */
+	Brake(force: number) {
+		const balance = this.v.GetSetting('brakeBalance');
+		this.frontAxle.BrakeAxle(force * 1 - balance);
+		this.rearAxle.BrakeAxle(force * 1 + balance);
+		//console.log(this.momentum);
+	}
+
+	Steer(angle: number) {
+		this.yawDelta = angle * -this.fMomentum * 5;
+		//console.log(this.yawDelta);
+	}
+}
+
+class Axle {
+	v: Vehicle; //the vehicle this belongs to
+	leftWheel: Wheel;
+	rightWheel: Wheel;
+
+	constructor(v: Vehicle) {
+		this.v = v;
+		this.leftWheel = new Wheel(this.v);
+		this.rightWheel = new Wheel(this.v);
+	}
+
+	DriveAxle(force: number) {
+		this.leftWheel.DriveWheel(force);
+		this.rightWheel.DriveWheel(force);
+	}
+
+	BrakeAxle(force: number) {
+		this.leftWheel.BrakeWheel(force);
+		this.rightWheel.BrakeWheel(force);
+	}
+}
+
+class Wheel {
+	v: Vehicle; //the vehicle this belongs to
+	radius: number = 17;
+	width: number = 0;
+	position: Point = new Point(0, 0);
+	steeringAngle: number = 0;
+	torque: number = 0; //rotational force
+	rotation: number = 0;
+	rotationDelta: number = 0;
+	slip: number = 0;
+	load: number = 0;
+	overSlipLimit: boolean = false;
+
+	constructor(v: Vehicle) {
+		this.v = v;
+	}
+	DriveWheel(force: number) {
+		console.log('driving');
+		this.torque = force * this.radius * 0.0254; // torque = force × radius in meters
+	}
+	Tick() {
+		this.rotationDelta = this.CalcAngularDisplacement(this.radius, this.torque, this.v.GetSetting('weight') / 4);
+		this.rotation += this.rotationDelta;
+		this.torque = 0;
+	}
+	BrakeWheel(force: number) {
+		console.log('braking');
+		this.torque = 0;
+		this.rotation -= force;
+	}
+
+	CalcAngularDisplacement(radius: number, torque: number, massInKilograms: number) {
+		const momentOfInertia = 0.5 * massInKilograms * Math.pow(radius * 0.0254, 2); // moment of inertia  = 0.5 × Mass × meterRadius^2
+		const angularDisplacement = torque / momentOfInertia;
+		return angularDisplacement;
+	}
+}
+
+//#endregion
