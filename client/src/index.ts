@@ -39,7 +39,7 @@ windowContainer.appendChild(debugContainer);
  * @returns a div element with the class name "debugItem".
  */
 function makeSlider(label: string, min: number, max: number, initial: number, cb: Function) {
-	const debugItem = document.createElement('div');
+	const debugItem: HTMLElement = document.createElement('div');
 	debugItem.className = 'debugItem';
 
 	const slider = document.createElement('input');
@@ -77,18 +77,109 @@ function makeSlider(label: string, min: number, max: number, initial: number, cb
 	return debugItem;
 }
 
-debugContainer.appendChild(makeSlider('power', 1, 100, 10, carUpdateSetting));
-debugContainer.appendChild(makeSlider('weight', 100, 4000, 1000, carUpdateSetting));
-debugContainer.appendChild(makeSlider('brakingForce', 1, 100, 10, carUpdateSetting));
-debugContainer.appendChild(makeSlider('resistance', 0, 2, 0.2, carUpdateSetting));
-debugContainer.appendChild(makeSlider('steeringForce', 0, 1, 0.1, carUpdateSetting));
-debugContainer.appendChild(makeSlider('maxSteeringAngle', 15, 90, 45, carUpdateSetting));
-debugContainer.appendChild(makeSlider('steeringRate', 1, 30, 3, carUpdateSetting));
-debugContainer.appendChild(makeSlider('steeringRebound', 1, 30, 15, carUpdateSetting));
-debugContainer.appendChild(makeSlider('loadChangeRate', 0, 10, 0.2, carUpdateSetting));
-debugContainer.appendChild(makeSlider('slipLimit', 0, 50, 15, carUpdateSetting));
-debugContainer.appendChild(makeSlider('driveBalance', 0, 1, 1, carUpdateSetting));
-debugContainer.appendChild(makeSlider('brakeBalance', 0, 1, 0.5, carUpdateSetting));
-debugContainer.appendChild(makeSlider('tyreGrip', 0, 1, 1, carUpdateSetting));
+class debugExpando {
+	expandoDiv = document.createElement('div');
+	headingBtn: HTMLElement = document.createElement('button');
+	expandoToggle: boolean = false;
+	debugItems: Array<HTMLElement> = new Array<HTMLElement>();
 
-debugContainer.appendChild(makeSlider('cameraZoom', 1, 100, 10, camUpdateSetting));
+	constructor(heading: string) {
+		this.expandoDiv.style.overflow = 'hidden';
+		const headingObserver = new MutationObserver((mutations) => {
+			if (this.expandoToggle == false) this.expandoDiv.style.height = this.headingBtn.getBoundingClientRect().height.toString() + 'px';
+		}); //checks for any changes to html elements
+		headingObserver.observe(this.headingBtn, { childList: true });
+		this.headingBtn.innerText = heading;
+		this.headingBtn.innerText += '>';
+		const ToggleExpando = () => {
+			console.log('hello');
+			if (this.expandoToggle) {
+				if (this.headingBtn) {
+					this.expandoDiv.style.height = this.headingBtn.getBoundingClientRect().height.toString() + 'px';
+					this.headingBtn.innerText = this.headingBtn.innerText.slice(0, -1);
+					this.headingBtn.innerText += '>';
+				}
+				this.expandoToggle = false;
+			} else {
+				this.expandoDiv.style.height = '400px';
+				if (this.headingBtn) {
+					this.headingBtn.innerText = this.headingBtn.innerText.slice(0, -1);
+					this.headingBtn.innerText += 'V';
+				}
+				this.expandoToggle = true;
+			}
+		};
+		//debugExpando.style.height = number(heading.clientHeight);
+		this.expandoDiv.appendChild(this.headingBtn);
+		this.headingBtn.addEventListener('click', (e) => {
+			ToggleExpando();
+		});
+	}
+	AddChild(child: HTMLElement) {
+		this.debugItems.push(child);
+		this.expandoDiv.appendChild(child);
+	}
+}
+
+const carSettingExpando = new debugExpando('Car Settings');
+const inputSettingExpando = new debugExpando('Input Settings');
+const gameSettingExpando = new debugExpando('Game Settings');
+debugContainer.appendChild(carSettingExpando.expandoDiv);
+debugContainer.appendChild(gameSettingExpando.expandoDiv);
+debugContainer.appendChild(inputSettingExpando.expandoDiv);
+carSettingExpando.AddChild(makeSlider('power', 1, 100, 10, carUpdateSetting));
+carSettingExpando.AddChild(makeSlider('weight', 100, 4000, 1000, carUpdateSetting));
+carSettingExpando.AddChild(makeSlider('brakingForce', 1, 100, 10, carUpdateSetting));
+carSettingExpando.AddChild(makeSlider('resistance', 0, 2, 0.2, carUpdateSetting));
+carSettingExpando.AddChild(makeSlider('steeringForce', 0, 1, 0.1, carUpdateSetting));
+carSettingExpando.AddChild(makeSlider('maxSteeringAngle', 15, 90, 45, carUpdateSetting));
+carSettingExpando.AddChild(makeSlider('steeringRate', 1, 30, 3, carUpdateSetting));
+carSettingExpando.AddChild(makeSlider('steeringRebound', 1, 30, 15, carUpdateSetting));
+carSettingExpando.AddChild(makeSlider('loadChangeRate', 0, 10, 0.2, carUpdateSetting));
+carSettingExpando.AddChild(makeSlider('slipLimit', 0, 50, 15, carUpdateSetting));
+carSettingExpando.AddChild(makeSlider('driveBalance', 0, 1, 1, carUpdateSetting));
+carSettingExpando.AddChild(makeSlider('brakeBalance', 0, 1, 0.5, carUpdateSetting));
+carSettingExpando.AddChild(makeSlider('tyreGrip', 0, 1, 1, carUpdateSetting));
+
+gameSettingExpando.AddChild(makeSlider('cameraZoom', 1, 100, 10, camUpdateSetting));
+
+const saveButton: HTMLElement = document.createElement('button');
+saveButton.innerText = 'Save';
+const loadButton: HTMLElement = document.createElement('button');
+loadButton.innerText = 'Load';
+debugContainer.appendChild(saveButton);
+debugContainer.appendChild(loadButton);
+saveButton.addEventListener('click', () => {
+	//console.log(carSettingExpando.debugItems);
+	let carSettingsString: string = '{';
+	for (let debugElement of carSettingExpando.debugItems) {
+		const t = debugElement.lastElementChild as HTMLFormElement;
+		//console.log(debugElement.innerText + ': ' + t.value);
+		carSettingsString += `"${debugElement.innerText}": ${t.value}`;
+		if (carSettingExpando.debugItems.lastIndexOf(debugElement) == carSettingExpando.debugItems.length - 1) {
+			carSettingsString += '}';
+		} else carSettingsString += ', ';
+	}
+	console.log('saving');
+	console.log(JSON.parse(carSettingsString));
+
+	localStorage.setItem('carSettings', carSettingsString);
+});
+
+loadButton.addEventListener('click', () => {
+	const carSettingString = localStorage.getItem('carSettings');
+	let carSettingObj: { [key: string]: number } = {};
+
+	if (carSettingString) {
+		carSettingObj = JSON.parse(carSettingString);
+		for (let key in carSettingObj) {
+			console.log(`${key}: ${carSettingObj[key]}`);
+			const debugElement = carSettingExpando.debugItems.find((debugElement) => debugElement.innerText == key);
+			if (debugElement) {
+				const t = debugElement.lastElementChild as HTMLFormElement;
+				t.value = carSettingObj[key];
+				game.carUpdateSetting(key, t.value);
+			}
+		}
+	} else console.log('no settings found');
+});
