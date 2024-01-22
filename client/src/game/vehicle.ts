@@ -1,107 +1,12 @@
-import { ColorSource, Container, Graphics, Point, Text, TextStyle } from 'pixi.js';
-import { Camera } from './camera';
+import { Container, Point, Text, TextStyle } from 'pixi.js';
+import { MyCircle, MyLine, MyRect } from '../util/gfx';
 import { GameObject } from './game_object';
 import { Game } from '../game';
-/**
- * The code defines classes for drawing lines, rectangles, and circles with customizable colors.
- * @param {number} width - The `width` parameter in the `DrawLine` function represents the width of the
- * line that will be drawn. It is of type `number`.
- * @param {ColorSource} color - The "color" parameter in the code represents the color of the graphics
- * elements. It is of type "ColorSource", which is not defined in the code snippet provided. The type
- * "ColorSource" could be a custom type or a reference to an external library or framework that defines
- * color values.
- * @returns In the `DrawLine` function, an instance of the `Graphics` class is being returned.
- */
-
-const DrawLine = (width: number, color: ColorSource) => {
-	const line = new Graphics();
-	line.lineStyle(width, color);
-	line.moveTo(0, 0);
-	line.lineTo(0, -100);
-	line.endFill();
-	return line;
-};
-
-class Rect extends Graphics {
-	w: number;
-	h: number;
-	constructor(w: number, h: number, color: ColorSource) {
-		super();
-		this.w = w;
-		this.h = h;
-		this.beginFill(color);
-		this.drawRect(-w / 2, -h / 2, w, h);
-		this.endFill();
-	}
-	SetColor(color: ColorSource) {
-		this.clear();
-		this.beginFill(color);
-		this.drawRect(-this.w / 2, -this.h / 2, this.w, this.h);
-		this.endFill();
-	}
-}
-
-class Circle extends Graphics {
-	radius: number;
-	constructor(radius: number, color: ColorSource) {
-		super();
-		this.radius = radius;
-		this.beginFill(color);
-		this.drawCircle(0, 0, radius);
-		this.endFill();
-	}
-	SetColor(color: ColorSource) {
-		this.clear();
-		this.beginFill(color);
-		this.drawCircle(0, 0, this.radius);
-		this.endFill();
-	}
-}
-
-//#region debug container for debugging the load
-const overloadValue: number = 15; //point at which debug squares turn red for vehicle load
-
-class VehicleDebug extends Container {
-	vehicle: Vehicle;
-	steeringAngle: Graphics = DrawLine(2, 0xff0000);
-	vehLoad: Circle = new Circle(10, 0xffffff);
-	loadText: Text = new Text('hello World', new TextStyle({ fontSize: 12, fill: 0xffffff }));
-	wheels: Array<Rect> = new Array<Rect>();
-
-	constructor(v: Vehicle) {
-		super();
-		this.vehicle = v;
-		this.addChild(new Rect(100, 100, 0x000000));
-		this.addChild(this.loadText);
-		this.addChild(this.steeringAngle);
-		this.addChild(this.vehLoad);
-		this.steeringAngle.scale.set(0.5);
-		this.vehLoad.scale.set(0.5);
-		this.position.set(v.game.renderer.width - 50, v.game.renderer.height - 50);
-		for (let i = 0; i < 4; i++) {
-			this.wheels.push(new Rect(12, 20, 0xffffff));
-			this.wheels[i].position.set(i * 20 - (i % 2) * 20 - 20, (i % 2) * 40 - 20);
-			this.addChild(this.wheels[i]);
-		}
-		//this object is added to the stage by the game
-	}
-
-	Update() {
-		this.steeringAngle.angle = this.vehicle.steeringAngle;
-		this.loadText.text = `x: ${Math.floor(this.vehicle.load.x)}\ny: ${Math.floor(this.vehicle.load.y)}`;
-		this.loadText.position.set(-this.loadText.width / 2, -50);
-		this.vehicle.overSlipLimit ? this.vehLoad.SetColor(0xff0000) : this.vehLoad.SetColor(0xffffff);
-		//console.log(this.vehicle.load);
-		this.vehLoad.position.set(this.vehicle.load.x, this.vehicle.load.y);
-	}
-}
-
-//#endregion
 
 export default class Vehicle extends GameObject {
 	game: Game; //reference to the passed game instance
 
-	vehicleSettings: Map<string, any> = new Map<string, any>();
+	vehicleSettings: Map<string, number> = new Map<string, number>();
 	settingNames: Array<string> = [
 		'power',
 		'weight',
@@ -201,14 +106,18 @@ export default class Vehicle extends GameObject {
 	 * @param {string} key - the key of the setting to be upadted in the vehicleSettings Map.
 	 * @param {any} value - Represents the new value to be assigned.
 	 */
-	UpdateSetting = (key: string, value: any) => {
+	UpdateSetting = (key: string, value: number) => {
 		if (this.vehicleSettings.has(key)) this.vehicleSettings.set(key, value);
 		else console.log(`ERROR: <vehicle.ts> UpdateSetting ${key} does not exist in vars Map`);
 	};
 
-	GetSetting = (key: string) => {
-		if (this.vehicleSettings.has(key)) return this.vehicleSettings.get(key);
-		else console.log(`ERROR: <vehicle.ts> GetSetting ${key} does not exist in vars Map`);
+	GetSetting = (key: string): number => {
+		const getKey = this.vehicleSettings.get(key);
+		if (getKey) return getKey;
+		else {
+			console.log(`ERROR: <vehicle.ts> GetSetting ${key} does not exist in vars Map`);
+			return 0;
+		}
 	};
 
 	//#region physics vehicle physics tick calculations
@@ -257,7 +166,7 @@ class VehiclePhysics {
 	Tick(dt: number) {
 		const vehicleWeight = this.v.GetSetting('weight');
 		if (this.v.isAccelerating) {
-			let power = this.v.GetSetting('power') * 1000;
+			const power = this.v.GetSetting('power') * 1000;
 			this.DriveVehicle((power / vehicleWeight) * dt); //applies a driving force to the vehicle
 		}
 
@@ -374,6 +283,45 @@ class Wheel {
 		const angularDisplacement = torque / momentOfInertia;
 		//console.log(angularDisplacement);
 		return angularDisplacement;
+	}
+}
+
+//#endregion
+
+//#region debug container for debugging the load
+
+class VehicleDebug extends Container {
+	vehicle: Vehicle;
+	steeringAngle: MyLine = new MyLine(100, 2, 0xffffff);
+	vehLoad: MyCircle = new MyCircle(10, 0xffffff);
+	loadText: Text = new Text('hello World', new TextStyle({ fontSize: 12, fill: 0xffffff }));
+	wheels: Array<MyRect> = new Array<MyRect>();
+
+	constructor(v: Vehicle) {
+		super();
+		this.vehicle = v;
+		this.addChild(new MyRect(100, 100, 0x000000));
+		this.addChild(this.loadText);
+		this.addChild(this.steeringAngle);
+		this.addChild(this.vehLoad);
+		this.steeringAngle.scale.set(0.5);
+		this.vehLoad.scale.set(0.5);
+		this.position.set(v.game.renderer.width - 50, v.game.renderer.height - 50);
+		for (let i = 0; i < 4; i++) {
+			this.wheels.push(new MyRect(12, 20, 0xffffff));
+			this.wheels[i].position.set(i * 20 - (i % 2) * 20 - 20, (i % 2) * 40 - 20);
+			this.addChild(this.wheels[i]);
+		}
+		//this object is added to the stage by the game
+	}
+
+	Update() {
+		this.steeringAngle.angle = this.vehicle.steeringAngle;
+		this.loadText.text = `x: ${Math.floor(this.vehicle.load.x)}\ny: ${Math.floor(this.vehicle.load.y)}`;
+		this.loadText.position.set(-this.loadText.width / 2, -50);
+		this.vehicle.overSlipLimit ? this.vehLoad.SetColor(0xff0000) : this.vehLoad.SetColor(0xffffff);
+		//console.log(this.vehicle.load);
+		this.vehLoad.position.set(this.vehicle.load.x, this.vehicle.load.y);
 	}
 }
 

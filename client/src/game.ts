@@ -1,13 +1,14 @@
+/* eslint-disable @typescript-eslint/no-this-alias */
 import { Application, ObservablePoint, Text, TextStyle, Ticker } from 'pixi.js';
-import { GameObject } from './game/game_object.ts';
 import { Camera } from './game/camera.ts';
 import Vehicle from './game/vehicle.ts';
 import TouchControl from './game/touch_control.ts';
+import { Track } from './game/track.ts';
 
 const keys: Map<string, boolean> = new Map<string, boolean>();
 let game: Game;
 let car: Vehicle;
-let track: GameObject;
+let track: Track;
 let camera: Camera;
 
 const style = new TextStyle({
@@ -19,8 +20,8 @@ const debugText: Text = new Text('', style);
 
 export class Game extends Application {
 	//used to pass values from html
-	carUpdateSetting: Function;
-	camUpdateSetting: Function;
+	carUpdateSetting;
+	camUpdateSetting;
 
 	pointerPos: ObservablePoint;
 	pointerDownPos: ObservablePoint;
@@ -38,8 +39,8 @@ export class Game extends Application {
 
 		camera = new Camera(this);
 		car = new Vehicle(0, 0, 4.8, 4.8, this);
-		track = new GameObject(0, 0, 400, 400, './images/track.png', this);
-
+		//track = new GameObject(0, 0, 400, 400, './images/track.png', this);
+		track = new Track(this);
 		this.carUpdateSetting = car.UpdateSetting;
 		this.camUpdateSetting = camera.UpdateSetting;
 		this.pointerPos = new ObservablePoint(() => {}, this);
@@ -82,7 +83,7 @@ export class Game extends Application {
  * Updates position and movement of car based on user input and updates debug texts.
  */
 const Tick = () => {
-	let dt = Ticker.shared.deltaMS * 0.001;
+	const dt = Ticker.shared.deltaMS * 0.001;
 	track.Tick(dt);
 	car.Tick(dt);
 	//camera.UpdatePos();

@@ -25,7 +25,7 @@ export class Camera extends Transform {
 		this.UpdatePos();
 	}
 
-	UpdateSetting = (setting: any, value: any) => {
+	UpdateSetting = (setting: string, value: number) => {
 		//we ignore the setting variable because the only setting we have for now is zoom
 		this.zoom = value;
 		this.UpdatePos();
