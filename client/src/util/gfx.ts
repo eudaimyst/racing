@@ -1,4 +1,4 @@
-import { ColorSource, Graphics, IPointData, IShape, Polygon } from 'pixi.js';
+import { ColorSource, Graphics, IPointData, IShape, Point, Polygon } from 'pixi.js';
 
 class GFXObj extends Graphics {
 	objColor: ColorSource;
@@ -64,13 +64,9 @@ export class MyCircle extends GFXObj {
 }
 
 export class MyShape extends GFXObj {
-	constructor(p1x: number, p1y: number, p2x: number, p2y: number, color: ColorSource) {
+	constructor(points: Array<IPointData>, color: ColorSource) {
 		super(color);
-		const pointData: IPointData = { x: p1x, y: p1y };
-		const pointData2: IPointData = { x: p2x, y: p1y };
-		const pointData3: IPointData = { x: p2x, y: p2y };
-		const pointData4: IPointData = { x: p1x, y: p2y };
-		const shape: IShape = new Polygon(pointData, pointData2, pointData3, pointData4);
+		const shape: IShape = new Polygon(points[0], points[1], points[2], points[3]);
 		this.beginFill(color);
 		this.objDraw = () => {
 			this.drawShape(shape);
